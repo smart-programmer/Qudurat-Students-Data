@@ -1,5 +1,9 @@
 from Qudurat import db, login_manager
 from flask_login import UserMixin
+import sys
+
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
 
 @login_manager.user_loader

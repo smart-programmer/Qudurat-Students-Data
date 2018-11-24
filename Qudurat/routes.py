@@ -1,13 +1,15 @@
 # -*- coding: latin-1 -*-
 
 from flask import render_template, redirect, url_for
-from Qudurat import app
+from Qudurat import app, db
 from Qudurat.forms import PasswordForm, StudentDataForm
 from Qudurat.models import Password, StudenData
-import random, string, os
+import random, string, os, sys
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 
-dynamic_string = "".join(random.choice(string.lowercase) for i in range(10))
 
 
 @app.route("/")
@@ -24,17 +26,28 @@ def password_entry():
 
     if form.validate_on_submit():
         password = form.password.data
-        if Password.query.filter_by(password=password):
+        if Password.query.filter_by(password=password).first():
+            dynamic_string = "".join(random.choice(string.lowercase) for i in range(6))
+            password = Password(password=dynamic_string)
+            db.session.add(password)
+            db.session.commit()
+            random_string = Password.query.filter_by(password=dynamic_string)
             return redirect(url_for("data_entry", string=dynamic_string))
-        
+        else:
+           return redirect(url_for("home"))
 
     return render_template("enterpassword.html", form=form)
 
 
 @app.route("/dataentry<string>", methods=["GET", "POST"])
 def data_entry(string):
-    if string != dynamic_string:
-        return redirect(url_for("home"))
+    password = Password.query.filter_by(password=string).first()
+    if not password:
+        return redirect(url_for("password_entry"))
+
+    db.session.delete(password)
+    db.session.commit()
+    
 
     form = StudentDataForm()
 
@@ -45,9 +58,9 @@ def data_entry(string):
         number_of_try = form.number_of_try.data
         math_degree = form.math_degree.data
         language_degree = form.language_degree.data
-        degrees_sum = form.degree_sum.data
+        degrees_sum = form.degrees_sum.data
         
-        studen_data = StudenData(name=name, academic_number=academic_number, ID_number=ID_number, number_of_try=number_of_try, math_degree=math_degree, language_degree=language_degree, degrees_sum=degrees_sum)
+        student_data = StudenData(name=name, academic_number=academic_number, ID_number=ID_number, number_of_try=number_of_try, math_degree=math_degree, language_degree=language_degree, degrees_sum=degrees_sum)
         
         db.session.add(student_data)
         db.session.commit()
@@ -59,4 +72,6 @@ def data_entry(string):
 
 
 
-
+@app.route("/showdata")
+def show_data():
+    pass
